@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>非标自动化设计工坊</title>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #399dff;
+            --primary-dark: #2588e6;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #ffffff;
+            --text-dim: rgba(255, 255, 255, 0.8);
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; padding: 20px 0; margin-bottom: 20px; }
+        .header h1 { font-size: 1.8rem; font-weight: 700; background: linear-gradient(45deg, var(--primary), #9c27b0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .tab-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .tab-btn { padding: 10px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; transition: all 0.2s ease; white-space: nowrap; position: relative; overflow: hidden; }
+        .tab-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); transform: translateY(-1px); }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 2px 4px rgba(57, 157, 255, 0.3); }
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .tab-content.active { display: block; }
+        .panel { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; backdrop-filter: blur(10px); border: 1px solid var(--border); box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: all 0.3s ease; }
+        .panel:hover { box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+        .panel-title { font-size: 1.1rem; font-weight: 600; color: var(--primary); }
+        .formula-section { margin: 15px 0; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; border-left: 4px solid var(--primary); font-size: 0.9rem; line-height: 1.8; display: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .formula-section.show { display: block; animation: slideDown 0.3s ease; }
+        .formula-section h4 { color: var(--primary); margin-bottom: 10px; font-size: 0.95rem; font-weight: 600; }
+        .formula-section p { margin: 6px 0; color: var(--text-dim); }
+        .formula-section .math { font-family: 'Times New Roman', serif; padding: 5px 10px; background: rgba(255,255,255,0.05); border-radius: 6px; display: inline-block; margin: 4px 4px 4px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 500px; } }
+        .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+        .form-group { display: flex; flex-direction: column; min-width: 90px; flex: 1; max-width: 140px; }
+        .form-group label { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 3px; font-weight: 500; }
+        .form-group input, .form-group select { padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: rgba(0,0,0,0.3); color: var(--text); font-size: 0.8rem; outline: none; width: 100%; transition: all 0.2s ease; box-shadow: inset 0 1px 2px rgba(0,0,0,0.2); }
+        .form-group input:focus, .form-group select:focus { border-color: var(--primary); background: rgba(0,0,0,0.4); box-shadow: 0 0 0 2px rgba(57, 157, 255, 0.2); }
+        .formula-section { margin: 15px 0; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; border-left: 3px solid var(--primary); font-size: 0.9rem; line-height: 1.8; display: none; }
+        .formula-section.show { display: block; }
+        .formula-section h4 { color: var(--primary); margin-bottom: 10px; }
+        .formula-section p { margin: 6px 0; color: var(--text-dim); }
+        .formula-section .math { font-family: 'Times New Roman', serif; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px; display: inline-block; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
+        .form-group input::placeholder { color: rgba(255,255,255,0.3); }
+        .formula-section.show { display: block; }
+        .formula-section h4 { color: var(--primary); margin-bottom: 10px; }
+        .formula-section p { margin: 6px 0; color: var(--text-dim); }
+        .formula-section .math { font-family: 'Times New Roman', serif; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px; display: inline-block; margin: 4px 4px 4px 0; }
+        .btn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .btn:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: #218838; }
+        .result { margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border-left: 4px solid var(--success); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .result h4 { color: var(--success); margin-bottom: 10px; font-size: 0.95rem; }
+        .result-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+        .result-item { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.85rem; }
+        .result-label { color: var(--text-dim); font-weight: 500; }
+        .result-value { font-weight: 600; }
+        .result-value.warn { color: var(--warning); }
+        .result-value.error { color: var(--danger); }
+        .result-value.success { color: var(--success); }
+        .db-section { margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border); }
+        .db-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .db-header h4 { color: var(--primary); font-size: 0.9rem; font-weight: 600; }
+        .add-btn { background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 500; transition: all 0.2s ease; }
+        .add-btn:hover { background: #218838; transform: translateY(-1px); }
+        .db-list { max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.3); }
+        .db-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; margin-bottom: 4px; background: rgba(255,255,255,0.05); border-radius: 6px; font-size: 0.8rem; transition: background 0.2s ease; }
+        .db-item:hover { background: rgba(255,255,255,0.1); }
+        .del-btn { background: var(--danger); color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; font-weight: 500; transition: all 0.2s ease; }
+        .del-btn:hover { background: #c82333; transform: scale(1.05); }
+        .add-form { margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; display: none; box-shadow: inset 0 1px 3px rgba(0,0,0,0.3); }
+        .add-form.show { display: flex; flex-wrap: wrap; gap: 8px; }
+        .add-form input { flex: 1; min-width: 80px; padding: 6px 8px; font-size: 0.8rem; border: 1px solid var(--border); border-radius: 6px; background: rgba(0,0,0,0.3); color: var(--text); outline: none; }
+        .add-form input:focus { border-color: var(--primary); background: rgba(0,0,0,0.4); }
+        .add-form .btn { flex-shrink: 0; padding: 6px 12px; }
+        .compare-section { margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.15); border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .compare-section h4 { color: var(--primary); margin-bottom: 10px; font-size: 0.9rem; font-weight: 600; }
+        @media (max-width: 768px) { .form-group { min-width: 100px; } .tab-btn { padding: 8px 12px; font-size: 0.8rem; } }
+        @media (max-width: 480px) { .form-row { gap: 6px; } .form-group { min-width: 90px; } }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header"><h1>⚙️ 非标自动化设计工坊</h1></div>
+        <nav class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('motor',this)">1. 电机惯量</button>
+            <button class="tab-btn" onclick="switchTab('camera',this)">2. 视觉精度</button>
+            <button class="tab-btn" onclick="switchTab('unit',this)">3. 单位转换</button>
+            <button class="tab-btn" onclick="switchTab('pneumatic',this)">4. 气动耗气</button>
+            <button class="tab-btn" onclick="switchTab('vacuum',this)">5. 真空吸盘</button>
+            <button class="tab-btn" onclick="switchTab('conveyor',this)">6. 输送机</button>
+            <button class="tab-btn" onclick="switchTab('robot',this)">7. 机器人</button>
+            <button class="tab-btn" onclick="switchTab('cost',this)">8. 钣金估价</button>
+            <button class="tab-btn" onclick="switchTab('tolerance',this)">9. 公差与配合</button>
+        </nav>
+
+        <div id="motor" class="tab-content active">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">伺服电机惯量计算（滚珠丝杆传动）</h3>
+                    <button class="btn" onclick="toggleFormula('motor-formula')">📖 公式</button>
+                </div>
+                <div id="motor-formula" class="formula-section">
+                    <h4>计算公式</h4>
+                    <p>• 丝杆惯量: <span class="math">\( J_s = \frac{\pi \rho D^4 L}{32 \times 10^8} \) kg·cm²</span></p>
+                    <p>• 负载惯量: <span class="math">\( J_L = m \cdot (\frac{P}{2\pi})^2 \) kg·cm²</span></p>
+                    <p>• 惯量比: <span class="math">\( \lambda = \frac{J_L}{J_m} \)</span></p>
+                    <p>• 加速扭矩: <span class="math">\( T_a = \frac{(J_m+J_L) \cdot \omega}{t_a} \) N·m</span></p>
+                    <p>• 有效扭矩: <span class="math">\( T_{rms} = \sqrt{\frac{T_a^2 t_a + T_f^2 t_f}{t_c}} \) N·m</span></p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>负载质量 (kg)</label><input type="number" id="m-loadMass" step="0.1"></div>
+                    <div class="form-group"><label>丝杆导程 (mm)</label><input type="number" id="m-screwLead" step="0.1"></div>
+                    <div class="form-group"><label>丝杆直径 (mm)</label><input type="number" id="m-screwDiameter" step="0.1"></div>
+                    <div class="form-group"><label>丝杆长度 (m)</label><input type="number" id="m-screwLength" step="0.1"></div>
+                    <div class="form-group"><label>联轴器惯量</label><input type="number" id="m-couplingInertia" step="0.01" placeholder="kg·cm²"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>加减速时间 (s)</label><input type="number" id="m-accelTime" step="0.01"></div>
+                    <div class="form-group"><label>运行速度 (mm/s)</label><input type="number" id="m-runSpeed" step="0.1"></div>
+                    <div class="form-group"><label>电机惯量</label><input type="number" id="m-motorInertia" step="0.01" placeholder="kg·cm²"></div>
+                    <div class="form-group"><label>电机扭矩 (N·m)</label><input type="number" id="m-motorTorque" step="0.1"></div>
+                </div>
+                <button class="btn" onclick="calculateMotorInertia()">计算</button>
+                <div id="motorResult" class="result"></div>
+                <div class="db-section">
+                    <div class="db-header"><h4>伺服电机库</h4><button class="add-btn" onclick="toggleAddForm('motor-add')">+ 添加</button></div>
+                    <div id="motor-add" class="add-form">
+                        <input type="text" id="m-add-model" placeholder="型号">
+                        <input type="number" id="m-add-inertia" placeholder="惯量" step="0.01">
+                        <input type="number" id="m-add-torque" placeholder="扭矩" step="0.1">
+                        <button class="btn btn-success" onclick="addMotor()">保存</button>
+                    </div>
+                    <div id="motorDatabase" class="db-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="camera" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">视觉相机精度计算</h3>
+                    <button class="btn" onclick="toggleFormula('camera-formula')">📖 公式</button>
+                </div>
+                <div id="camera-formula" class="formula-section">
+                    <h4>计算公式</h4>
+                    <p>• 水平视野: <span class="math">\( FOV_x = \frac{WD \cdot W \cdot pixel}{f \cdot 1000} \) mm</span></p>
+                    <p>• 垂直视野: <span class="math">\( FOV_y = \frac{WD \cdot H \cdot pixel}{f \cdot 1000} \) mm</span></p>
+                    <p>• 像素精度: <span class="math">\( PP = \frac{FOV}{Resolution} \) mm/px</span></p>
+                    <p>• 最小特征: <span class="math">\( MFS = 3 \times PP \) mm</span></p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>相机宽度 (px)</label><input type="number" id="c-width" step="1"></div>
+                    <div class="form-group"><label>相机高度 (px)</label><input type="number" id="c-height" step="1"></div>
+                    <div class="form-group"><label>像元尺寸 (μm)</label><input type="number" id="c-pixelSize" step="0.1"></div>
+                    <div class="form-group"><label>工作距离 (mm)</label><input type="number" id="c-wd" step="1"></div>
+                    <div class="form-group"><label>焦距 (mm)</label><input type="number" id="c-focal" step="0.1"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>目标精度 (mm/px)</label><input type="number" id="c-targetAcc" step="0.001" placeholder="反推像素用"></div>
+                </div>
+                <button class="btn" onclick="calculateCamera()">计算</button>
+                <div id="cameraResult" class="result"></div>
+                <div class="db-section">
+                    <div class="db-header"><h4>工业相机库</h4><button class="add-btn" onclick="toggleAddForm('camera-add')">+ 添加</button></div>
+                    <div id="camera-add" class="add-form">
+                        <input type="text" id="c-add-model" placeholder="型号">
+                        <input type="number" id="c-add-width" placeholder="宽度" step="1">
+                        <input type="number" id="c-add-height" placeholder="高度" step="1">
+                        <input type="number" id="c-add-pixel" placeholder="像元" step="0.1">
+                        <button class="btn btn-success" onclick="addCamera()">保存</button>
+                    </div>
+                    <div id="cameraDatabase" class="db-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="unit" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">单位转换与电机比对</h3>
+                    <button class="btn" onclick="toggleFormula('unit-formula')">📖 公式</button>
+                </div>
+                <div id="unit-formula" class="formula-section">
+                    <h4>惯量单位换算</h4>
+                    <p><span class="math">\( 1 \, kg \cdot cm^2 = 100 \, g \cdot cm^2 \)</span></p>
+                    <p><span class="math">\( 1 \, kg \cdot cm^2 = 14.161 \, oz \cdot in^2 \)</span></p>
+                    <p><span class="math">\( 1 \, kg \cdot cm^2 = 0.01 \, kgf \cdot cm \cdot s^2 \)</span></p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>输入值</label><input type="number" id="u-input" step="0.01"></div>
+                    <div class="form-group"><label>输入单位</label>
+                        <select id="u-inputUnit">
+                            <option value="kgcm2">kg·cm²</option>
+                            <option value="gcm2">g·cm²</option>
+                            <option value="ozin2">oz·in²</option>
+                            <option value="kgfcm">kgf·cm·s²</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>输出单位</label>
+                        <select id="u-outputUnit">
+                            <option value="kgcm2">kg·cm²</option>
+                            <option value="gcm2">g·cm²</option>
+                            <option value="ozin2">oz·in²</option>
+                            <option value="kgfcm">kgf·cm·s²</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn" onclick="convertUnit()">转换</button>
+                <div id="unitResult" class="result"></div>
+                <div class="compare-section">
+                    <h4>多电机比对</h4>
+                    <div class="form-row">
+                        <div class="form-group"><label>负载惯量 (kg·cm²)</label><input type="number" id="u-compareInertia" step="0.01"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>电机 1</label><select id="u-motor1"></select></div>
+                        <div class="form-group"><label>电机 2</label><select id="u-motor2"></select></div>
+                        <div class="form-group"><label>电机 3</label><select id="u-motor3"></select></div>
+                    </div>
+                    <button class="btn" onclick="compareMotors()">比对</button>
+                    <div id="compareResult" class="result"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="pneumatic" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">气动耗气量与 Cv 选型</h3>
+                    <button class="btn" onclick="toggleFormula('pneumatic-formula')">📖 公式</button>
+                </div>
+                <div id="pneumatic-formula" class="formula-section">
+                    <h4>计算公式</h4>
+                    <p>• 单次耗气量: <span class="math">\( V = \frac{\pi D^2}{4} \times S \times 10^{-9} \) m³</span></p>
+                    <p>• 耗气量: <span class="math">\( Q = V \cdot f \cdot 60 \) L/min</span></p>
+                    <p>• Cv值: <span class="math">\( C_v = \frac{Q \cdot \sqrt{1/P}}{14.7 \cdot \sqrt{\Delta P/P}} \)</span></p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>气缸缸径 (mm)</label><input type="number" id="p-cylinderD" step="1"></div>
+                    <div class="form-group"><label>气缸行程 (mm)</label><input type="number" id="p-stroke" step="1"></div>
+                    <div class="form-group"><label>工作压力 (bar)</label><input type="number" id="p-pressure" step="0.1"></div>
+                    <div class="form-group"><label>动作频率 (次/min)</label><input type="number" id="p-freq" step="0.1"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>管径 (mm)</label><input type="number" id="p-pipeD" step="0.1"></div>
+                    <div class="form-group"><label>压降 (bar)</label><input type="number" id="p-drop" step="0.1"></div>
+                </div>
+                <button class="btn" onclick="calculatePneumatic()">计算</button>
+                <div id="pneumaticResult" class="result"></div>
+                <div class="db-section">
+                    <div class="db-header"><h4>气缸型号库</h4><button class="add-btn" onclick="toggleAddForm('cylinder-add')">+ 添加</button></div>
+                    <div id="cylinder-add" class="add-form">
+                        <input type="text" id="p-add-model" placeholder="型号">
+                        <input type="number" id="p-add-diameter" placeholder="缸径" step="1">
+                        <button class="btn btn-success" onclick="addCylinder()">保存</button>
+                    </div>
+                    <div id="cylinderDatabase" class="db-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="vacuum" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">真空吸盘选型与吸附力计算</h3>
+                    <button class="btn" onclick="toggleFormula('vacuum-formula')">📖 公式</button>
+                </div>
+                <div id="vacuum-formula" class="formula-section">
+                    <h4>计算公式</h4>
+                    <p>• 吸盘面积: <span class="math">\( A = \frac{\pi D^2}{4} \) m²</span></p>
+                    <p>• 单个吸附力: <span class="math">\( F = A \cdot P \cdot \eta \) N</span></p>
+                    <p>• 总吸附力: <span class="math">\( F_{total} = F \cdot n \) N</span></p>
+                    <p>• 安全系数: <span class="math">\( S = \frac{F_{total}}{m \cdot g} \)</span></p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>工件质量 (kg)</label><input type="number" id="v-mass" step="0.1"></div>
+                    <div class="form-group"><label>真空度 (kPa)</label><input type="number" id="v-vacuum" step="1"></div>
+                    <div class="form-group"><label>吸盘数量</label><input type="number" id="v-count" step="1"></div>
+                    <div class="form-group"><label>吸盘直径 (mm)</label><input type="number" id="v-diameter" step="1"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>安全系数</label><input type="number" id="v-safety" step="0.1" value="2"></div>
+                    <div class="form-group"><label>表面系数</label><input type="number" id="v-surface" step="0.1" value="0.8"></div>
+                </div>
+                <button class="btn" onclick="calculateVacuum()">计算</button>
+                <div id="vacuumResult" class="result"></div>
+                <div class="db-section">
+                    <div class="db-header"><h4>真空吸盘库</h4><button class="add-btn" onclick="toggleAddForm('vacuum-add')">+ 添加</button></div>
+                    <div id="vacuum-add" class="add-form">
+                        <input type="text" id="v-add-model" placeholder="型号">
+                        <input type="number" id="v-add-diameter" placeholder="直径" step="1">
+                        <input type="text" id="v-add-material" placeholder="材质">
+                        <button class="btn btn-success" onclick="addVacuum()">保存</button>
+                    </div>
+                    <div id="vacuumDatabase" class="db-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="conveyor" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">皮带/链条输送机功率计算</h3>
+                    <button class="btn" onclick="toggleFormula('conveyor-formula')">📖 公式</button>
+                </div>
+                <div id="conveyor-formula" class="formula-section">
+                    <h4>计算公式</h4>
+                    <p>• 摩擦力: <span class="math">\( F_f = m \cdot g \cdot \mu \cdot \cos\theta \) N</span></p>
+                    <p>• 坡度力: <span class="math">\( F_h = m \cdot g \cdot \sin\theta \) N</span></p>
+                    <p>• 加速力: <span class="math">\( F_a = m \cdot a \) N</span></p>
+                    <p>• 有效张力: <span class="math">\( F_e = F_f + F_h + F_a \) N</span></p>
+                    <p>• 功率: <span class="math">\( P = \frac{F_e \cdot v}{1000 \cdot \eta} \) kW</span></p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>总负载 (kg)</label><input type="number" id="cn-load" step="1"></div>
+                    <div class="form-group"><label>运行速度 (m/s)</label><input type="number" id="cn-speed" step="0.1"></div>
+                    <div class="form-group"><label>摩擦系数</label><input type="number" id="cn-friction" step="0.01"></div>
+                    <div class="form-group"><label>加速度 (m/s²)</label><input type="number" id="cn-accel" step="0.1"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>爬坡角度 (°)</label><input type="number" id="cn-angle" step="1"></div>
+                    <div class="form-group"><label>传动效率</label><input type="number" id="cn-efficiency" step="0.01" value="0.85"></div>
+                    <div class="form-group"><label>驱动轮直径 (mm)</label><input type="number" id="cn-wheelD" step="1"></div>
+                    <div class="form-group"><label>电机转速 (rpm)</label><input type="number" id="cn-motorRPM" step="1"></div>
+                </div>
+                <button class="btn" onclick="calculateConveyor()">计算</button>
+                <div id="conveyorResult" class="result"></div>
+                <div class="db-section">
+                    <div class="db-header"><h4>驱动轮库</h4><button class="add-btn" onclick="toggleAddForm('wheel-add')">+ 添加</button></div>
+                    <div id="wheel-add" class="add-form">
+                        <input type="text" id="cn-add-model" placeholder="型号">
+                        <input type="number" id="cn-add-diameter" placeholder="直径" step="1">
+                        <button class="btn btn-success" onclick="addWheel()">保存</button>
+                    </div>
+                    <div id="wheelDatabase" class="db-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="robot" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">机器人末端负载校核</h3>
+                    <button class="btn" onclick="toggleFormula('robot-formula')">📖 公式</button>
+                </div>
+                <div id="robot-formula" class="formula-section">
+                    <h4>计算公式</h4>
+                    <p>• 总质量: <span class="math">\( m_{total} = m_{tool} + m_{workpiece} \) kg</span></p>
+                    <p>• 综合惯量: <span class="math">\( J_{total} = J_{tool} + J_{workpiece} \) kg·cm²</span></p>
+                    <p>• 惯量比: <span class="math">\( \lambda = \frac{J_{total}}{J_{rated}} \)</span></p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>机器人型号</label>
+                        <select id="r-robotModel">
+                            <option value="UR5">UR5</option>
+                            <option value="UR10">UR10</option>
+                            <option value="Fanuc">Fanuc</option>
+                            <option value="ABB">ABB IRB 120</option>
+                            <option value="KUKA">KUKA KR 6</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>工具质量 (kg)</label><input type="number" id="r-toolMass" step="0.1"></div>
+                    <div class="form-group"><label>工具重心偏移</label><input type="number" id="r-toolCG" step="1" placeholder="mm"></div>
+                    <div class="form-group"><label>工件质量 (kg)</label><input type="number" id="r-workMass" step="0.1"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>工件惯量 (kg·cm²)</label><input type="number" id="r-workInertia" step="0.01"></div>
+                </div>
+                <button class="btn" onclick="calculateRobot()">计算</button>
+                <div id="robotResult" class="result"></div>
+                <div class="db-section">
+                    <div class="db-header"><h4>机器人参数库</h4><button class="add-btn" onclick="toggleAddForm('robot-add')">+ 添加</button></div>
+                    <div id="robot-add" class="add-form">
+                        <input type="text" id="r-add-model" placeholder="型号">
+                        <input type="number" id="r-add-load" placeholder="额定负载" step="0.1">
+                        <input type="number" id="r-add-inertia" placeholder="额定惯量" step="0.01">
+                        <button class="btn btn-success" onclick="addRobot()">保存</button>
+                    </div>
+                    <div id="robotDatabase" class="db-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="cost" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">钣金与机加工快速估价</h3>
+                    <button class="btn" onclick="toggleFormula('cost-formula')">📖 公式</button>
+                </div>
+                <div id="cost-formula" class="formula-section">
+                    <h4>估价公式</h4>
+                    <p>• 材料费: <span class="math">\( C_m = \rho \cdot V \cdot P \) 元</span></p>
+                    <p>• 加工费: <span class="math">\( C_p = (L \cdot C_L + N \cdot C_N + T \cdot C_T) \cdot K \) 元</span></p>
+                    <p>• 处理费: <span class="math">\( C_s = A \cdot C_A \) 元</span></p>
+                    <p>• 总价: <span class="math">\( C_{total} = C_m + C_p + C_s \) 元</span></p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>零件类型</label>
+                        <select id="co-type">
+                            <option value="sheet">钣金</option>
+                            <option value="machined">机加工</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>材料</label>
+                        <select id="co-material">
+                            <option value="aluminum">铝合金</option>
+                            <option value="steel">碳钢</option>
+                            <option value="stainless">不锈钢</option>
+                            <option value="copper">铜合金</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>长度 (mm)</label><input type="number" id="co-length" step="1"></div>
+                    <div class="form-group"><label>宽度 (mm)</label><input type="number" id="co-width" step="1"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>厚度 (mm)</label><input type="number" id="co-thickness" step="0.1"></div>
+                    <div class="form-group"><label>重量 (kg)</label><input type="number" id="co-weight" step="0.1" placeholder="可选"></div>
+                    <div class="form-group"><label>切割长度</label><input type="number" id="co-cutLength" step="1"></div>
+                    <div class="form-group"><label>孔数</label><input type="number" id="co-holes" step="1"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>螺纹数</label><input type="number" id="co-threads" step="1"></div>
+                    <div class="form-group"><label>表面处理</label>
+                        <select id="co-surface">
+                            <option value="none">无</option>
+                            <option value="anodizing">阳极氧化</option>
+                            <option value="painting">喷漆</option>
+                            <option value="plating">电镀</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>复杂系数</label><input type="number" id="co-complex" step="0.1" value="1"></div>
+                </div>
+                <button class="btn" onclick="calculateCost()">估价</button>
+                <div id="costResult" class="result"></div>
+                <div class="db-section">
+                    <div class="db-header"><h4>材料单价库</h4><button class="add-btn" onclick="toggleAddForm('material-add')">+ 添加</button></div>
+                    <div id="material-add" class="add-form">
+                        <input type="text" id="co-add-name" placeholder="材料名">
+                        <input type="number" id="co-add-density" placeholder="密度g/cm³" step="0.01">
+                        <input type="number" id="co-add-price" placeholder="单价元/kg" step="0.1">
+                        <button class="btn btn-success" onclick="addMaterial()">保存</button>
+                    </div>
+                    <div id="materialDatabase" class="db-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tolerance" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">公差与配合速查</h3>
+                    <button class="btn" onclick="toggleFormula('tolerance-formula')">📖 说明</button>
+                </div>
+                <div id="tolerance-formula" class="formula-section">
+                    <h4>公差与配合说明</h4>
+                    <p>• 公差等级：IT01-IT18，精度依次降低</p>
+                    <p>• 配合类型：间隙配合（H/f）、过渡配合（H/k）、过盈配合（H/p）</p>
+                    <p>• 基本偏差：孔用大写字母，轴用小写字母</p>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>基本尺寸 (mm)</label><input type="number" id="t-basicSize" step="0.1"></div>
+                    <div class="form-group"><label>公差等级</label>
+                        <select id="t-toleranceGrade">
+                            <option value="IT01">IT01</option>
+                            <option value="IT0">IT0</option>
+                            <option value="IT1">IT1</option>
+                            <option value="IT2">IT2</option>
+                            <option value="IT3">IT3</option>
+                            <option value="IT4">IT4</option>
+                            <option value="IT5">IT5</option>
+                            <option value="IT6">IT6</option>
+                            <option value="IT7">IT7</option>
+                            <option value="IT8">IT8</option>
+                            <option value="IT9">IT9</option>
+                            <option value="IT10">IT10</option>
+                            <option value="IT11">IT11</option>
+                            <option value="IT12">IT12</option>
+                            <option value="IT13">IT13</option>
+                            <option value="IT14">IT14</option>
+                            <option value="IT15">IT15</option>
+                            <option value="IT16">IT16</option>
+                            <option value="IT17">IT17</option>
+                            <option value="IT18">IT18</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>配合类型</label>
+                        <select id="t-fitType">
+                            <option value="clearance">间隙配合 (H/f)</option>
+                            <option value="transition">过渡配合 (H/k)</option>
+                            <option value="interference">过盈配合 (H/p)</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn" onclick="calculateTolerance()">查询公差</button>
+                <div id="toleranceResult" class="result"></div>
+                <div class="db-section">
+                    <div class="db-header"><h4>常用公差表</h4><button class="add-btn" onclick="toggleAddForm('tolerance-add')">+ 自定义</button></div>
+                    <div id="tolerance-add" class="add-form">
+                        <input type="text" id="t-add-name" placeholder="名称">
+                        <input type="number" id="t-add-size" placeholder="尺寸" step="0.1">
+                        <input type="text" id="t-add-grade" placeholder="公差等级">
+                        <input type="text" id="t-add-fit" placeholder="配合类型">
+                        <button class="btn btn-success" onclick="addTolerance()">保存</button>
+                    </div>
+                    <div id="toleranceDatabase" class="db-list"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+<script>
+var STORAGE_KEYS = {
+    MOTORS: 'auto_motors_v5', CAMERAS: 'auto_cameras_v5', CYLINDERS: 'auto_cylinders_v5',
+    VACUUMS: 'auto_vacuums_v5', WHEELS: 'auto_wheels_v5', ROBOTS: 'auto_robots_v5', 
+    MATERIALS: 'auto_materials_v5', TOLERANCES: 'auto_tolerances_v5'
+};
+
+function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(function(el){el.classList.remove('active');});
+    document.querySelectorAll('.tab-btn').forEach(function(el){el.classList.remove('active');});
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+}
+
+function toggleFormula(id){var el=document.getElementById(id);el.classList.toggle('show');if(el.classList.contains('show')&&window.MathJax){MathJax.typesetPromise([el]);}}
+function toggleAddForm(id){document.getElementById(id).classList.toggle('show');}
+function clearInputs(ids){ids.forEach(function(id){document.getElementById(id).value='';});}
+
+function initData(){
+    var defaults={};
+    defaults[STORAGE_KEYS.MOTORS]=[{model:'SGMAH-01AAA4C',inertia:0.4,torque:1.4},{model:'SGMAH-02AAA4C',inertia:0.8,torque:2.8},{model:'SGMAH-04AAA4C',inertia:2.8,torque:4.2}];
+    defaults[STORAGE_KEYS.CAMERAS]=[{model:'MV-CA020-10GC',width:1600,height:1200,pixelSize:3.45},{model:'MV-CA040-10GM',width:2048,height:2048,pixelSize:3.45}];
+    defaults[STORAGE_KEYS.CYLINDERS]=[{model:'SC32x50',diameter:32},{model:'SC40x100',diameter:40},{model:'SC50x150',diameter:50}];
+    defaults[STORAGE_KEYS.VACUUMS]=[{model:'ZP20BS',diameter:20,material:'丁腈橡胶'},{model:'ZP30BS',diameter:30,material:'丁腈橡胶'}];
+    defaults[STORAGE_KEYS.WHEELS]=[{model:'Wheel-50',diameter:50},{model:'Wheel-80',diameter:80},{model:'Wheel-100',diameter:100}];
+    defaults[STORAGE_KEYS.ROBOTS]=[{model:'UR5',ratedLoad:5,ratedInertia:0.3},{model:'UR10',ratedLoad:10,ratedInertia:0.5},{model:'Fanuc',ratedLoad:6,ratedInertia:0.4}];
+    defaults[STORAGE_KEYS.MATERIALS]=[{name:'铝合金',density:2.7,price:25},{name:'碳钢',density:7.85,price:8},{name:'不锈钢',density:7.93,price:18}];
+    defaults[STORAGE_KEYS.TOLERANCES]=[{name:'精密轴孔配合',size:20,grade:'IT6',fit:'transition'},{name:'滑动轴承配合',size:30,grade:'IT7',fit:'clearance'},{name:'紧配合',size:15,grade:'IT7',fit:'interference'}];
+    for(var key in defaults){
+        if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(defaults[key]));
+    }
+}
+
+function loadAllDatabases(){
+    loadMotorDatabase();loadCameraDatabase();loadCylinderDatabase();
+    loadVacuumDatabase();loadWheelDatabase();loadRobotDatabase();
+    loadMaterialDatabase();loadToleranceDatabase();loadMotorSelects();
+}
+
+function calculateMotorInertia(){
+    var loadMass=parseFloat(document.getElementById('m-loadMass').value)||0;
+    var screwLead=parseFloat(document.getElementById('m-screwLead').value)||0;
+    var screwDiameter=parseFloat(document.getElementById('m-screwDiameter').value)||0;
+    var screwLength=parseFloat(document.getElementById('m-screwLength').value)||0;
+    var couplingInertia=parseFloat(document.getElementById('m-couplingInertia').value)||0;
+    var accelTime=parseFloat(document.getElementById('m-accelTime').value)||0;
+    var runSpeed=parseFloat(document.getElementById('m-runSpeed').value)||0;
+    var motorInertia=parseFloat(document.getElementById('m-motorInertia').value)||0;
+    var motorTorque=parseFloat(document.getElementById('m-motorTorque').value)||0;
+    var screwRadius=screwDiameter/2/100;
+    var screwVolume=Math.PI*Math.pow(screwRadius,2)*screwLength;
+    var screwMass=screwVolume*7850;
+    var screwInertia=(screwMass*Math.pow(screwRadius*100,2))/2;
+    var loadInertia=loadMass*Math.pow(screwLead/(2*Math.PI),2);
+    var totalInertia=loadInertia+screwInertia+couplingInertia;
+    var inertiaRatio=motorInertia>0?totalInertia/motorInertia:0;
+    var angularVelocity=runSpeed/1000/(screwLead/1000)*2*Math.PI;
+    var accelTorque=(motorInertia+totalInertia)/100*angularVelocity/(accelTime||0.1);
+    var frictionForce=loadMass*9.8*0.05;
+    var uniformTorque=frictionForce*(screwLead/1000)/(2*Math.PI);
+    var rmsTorque=Math.sqrt((Math.pow(accelTorque,2)*accelTime+Math.pow(uniformTorque,2)*1)/((accelTime||0.1)*2+1));
+    var overloadPercent=motorTorque>0?(rmsTorque/motorTorque)*100:0;
+    var cls=overloadPercent>100?'error':overloadPercent>80?'warn':'success';
+    document.getElementById('motorResult').innerHTML='<h4>计算结果</h4><div class="result-grid"><div class="result-item"><span class="result-label">负载总惯量:</span><span class="result-value">'+totalInertia.toFixed(2)+' kg·cm²</span></div><div class="result-item"><span class="result-label">惯量比:</span><span class="result-value '+(inertiaRatio>10?'warn':'')+'">'+inertiaRatio.toFixed(2)+'</span></div><div class="result-item"><span class="result-label">加速扭矩:</span><span class="result-value">'+accelTorque.toFixed(2)+' N·m</span></div><div class="result-item"><span class="result-label">匀速扭矩:</span><span class="result-value">'+uniformTorque.toFixed(2)+' N·m</span></div><div class="result-item"><span class="result-label">有效扭矩:</span><span class="result-value">'+rmsTorque.toFixed(2)+' N·m</span></div><div class="result-item"><span class="result-label">过载评估:</span><span class="result-value '+cls+'">'+overloadPercent.toFixed(1)+'%</span></div></div>';
+}
+
+function calculateCamera(){
+    var width=parseFloat(document.getElementById('c-width').value)||0;
+    var height=parseFloat(document.getElementById('c-height').value)||0;
+    var pixelSize=parseFloat(document.getElementById('c-pixelSize').value)||0;
+    var wd=parseFloat(document.getElementById('c-wd').value)||0;
+    var focal=parseFloat(document.getElementById('c-focal').value)||0;
+    var targetAcc=parseFloat(document.getElementById('c-targetAcc').value)||0;
+    var html='<h4>计算结果</h4><div class="result-grid">';
+    if(width&&height&&pixelSize&&wd&&focal){
+        var fovX=(wd*width*pixelSize)/(focal*1000);
+        var fovY=(wd*height*pixelSize)/(focal*1000);
+        var ppX=fovX/width;
+        var ppY=fovY/height;
+        var mfs=3*Math.max(ppX,ppY);
+        html+='<div class="result-item"><span class="result-label">水平视野:</span><span class="result-value">'+fovX.toFixed(2)+' mm</span></div>';
+        html+='<div class="result-item"><span class="result-label">垂直视野:</span><span class="result-value">'+fovY.toFixed(2)+' mm</span></div>';
+        html+='<div class="result-item"><span class="result-label">像素精度:</span><span class="result-value">'+ppX.toFixed(4)+' mm/px</span></div>';
+        html+='<div class="result-item"><span class="result-label">最小特征:</span><span class="result-value">'+mfs.toFixed(3)+' mm</span></div>';
+    }
+    if(targetAcc&&wd&&focal&&pixelSize){
+        var requiredPixels=(wd*pixelSize)/(focal*1000*targetAcc);
+        html+='<div class="result-item"><span class="result-label">所需像素:</span><span class="result-value">'+Math.ceil(requiredPixels)+' px</span></div>';
+    }
+    html+='</div>';
+    document.getElementById('cameraResult').innerHTML=html;
+}
+
+function convertUnit(){
+    var inputVal=parseFloat(document.getElementById('u-input').value)||0;
+    var inputUnit=document.getElementById('u-inputUnit').value;
+    var outputUnit=document.getElementById('u-outputUnit').value;
+    var valueInKgcm2=inputVal;
+    if(inputUnit==='gcm2')valueInKgcm2=inputVal/100;
+    else if(inputUnit==='ozin2')valueInKgcm2=inputVal/14.161;
+    else if(inputUnit==='kgfcm')valueInKgcm2=inputVal*100;
+    var result=valueInKgcm2;
+    if(outputUnit==='gcm2')result=valueInKgcm2*100;
+    else if(outputUnit==='ozin2')result=valueInKgcm2*14.161;
+    else if(outputUnit==='kgfcm')result=valueInKgcm2/100;
+    var labels={kgcm2:'kg·cm²',gcm2:'g·cm²',ozin2:'oz·in²',kgfcm:'kgf·cm·s²'};
+    document.getElementById('unitResult').innerHTML='<h4>转换结果</h4><div class="result-grid"><div class="result-item"><span class="result-label">输入:</span><span class="result-value">'+inputVal.toFixed(4)+' '+labels[inputUnit]+'</span></div><div class="result-item"><span class="result-label">输出:</span><span class="result-value">'+result.toFixed(4)+' '+labels[outputUnit]+'</span></div></div>';
+}
+
+function compareMotors(){
+    var inertia=parseFloat(document.getElementById('u-compareInertia').value)||0;
+    var m1=document.getElementById('u-motor1').value;
+    var m2=document.getElementById('u-motor2').value;
+    var m3=document.getElementById('u-motor3').value;
+    var motors=JSON.parse(localStorage.getItem(STORAGE_KEYS.MOTORS)||'[]');
+    var getRatio=function(model){var motor=motors.find(function(x){return x.model===model;});return motor&&motor.inertia>0?inertia/motor.inertia:0;};
+    var html='<h4>比对结果</h4><div class="result-grid">';
+    if(m1)html+='<div class="result-item"><span class="result-label">'+m1+':</span><span class="result-value '+(getRatio(m1)>10?'warn':'')+'">'+getRatio(m1).toFixed(2)+'</span></div>';
+    if(m2)html+='<div class="result-item"><span class="result-label">'+m2+':</span><span class="result-value '+(getRatio(m2)>10?'warn':'')+'">'+getRatio(m2).toFixed(2)+'</span></div>';
+    if(m3)html+='<div class="result-item"><span class="result-label">'+m3+':</span><span class="result-value '+(getRatio(m3)>10?'warn':'')+'">'+getRatio(m3).toFixed(2)+'</span></div>';
+    html+='</div>';
+    document.getElementById('compareResult').innerHTML=html;
+}
+
+function calculatePneumatic(){
+    var D=parseFloat(document.getElementById('p-cylinderD').value)||0;
+    var S=parseFloat(document.getElementById('p-stroke').value)||0;
+    var P=parseFloat(document.getElementById('p-pressure').value)||0;
+    var f=parseFloat(document.getElementById('p-freq').value)||0;
+    var dP=parseFloat(document.getElementById('p-drop').value)||0;
+    if(!D||!S||!P||!f){document.getElementById('pneumaticResult').innerHTML='<h4>结果</h4><p style="color:var(--warning)">请输入完整参数</p>';return;}
+    var volume=Math.PI*Math.pow(D/2,2)*S;
+    var Q=volume*f*1000/1000000*60;
+    var cv=Q/Math.sqrt(dP/P)||Q;
+    var recommendedCv=Math.ceil(cv*1.2);
+    var pipeSize='4mm';
+    if(Q>50)pipeSize='8mm';
+    else if(Q>20)pipeSize='6mm';
+    document.getElementById('pneumaticResult').innerHTML='<h4>计算结果</h4><div class="result-grid"><div class="result-item"><span class="result-label">耗气量:</span><span class="result-value">'+Q.toFixed(2)+' L/min</span></div><div class="result-item"><span class="result-label">Cv值:</span><span class="result-value">'+cv.toFixed(3)+'</span></div><div class="result-item"><span class="result-label">推荐Cv:</span><span class="result-value">'+recommendedCv+'</span></div><div class="result-item"><span class="result-label">推荐管径:</span><span class="result-value">'+pipeSize+'</span></div></div>';
+}
+
+function calculateVacuum(){
+    var mass=parseFloat(document.getElementById('v-mass').value)||0;
+    var vacuum=parseFloat(document.getElementById('v-vacuum').value)||0;
+    var count=parseInt(document.getElementById('v-count').value)||0;
+    var diameter=parseFloat(document.getElementById('v-diameter').value)||0;
+    var safety=parseFloat(document.getElementById('v-safety').value)||2;
+    var surface=parseFloat(document.getElementById('v-surface').value)||0.8;
+    if(!mass||!vacuum||!count||!diameter){document.getElementById('vacuumResult').innerHTML='<h4>结果</h4><p style="color:var(--warning)">请输入完整参数</p>';return;}
+    var area=Math.PI*Math.pow(diameter/2/1000,2);
+    var singleForce=area*vacuum*1000*surface;
+    var totalForce=singleForce*count;
+    var requiredForce=mass*9.8*safety;
+    var actualSafety=totalForce/requiredForce;
+    var recommendedD=Math.sqrt(requiredForce*4/(Math.PI*vacuum*1000*surface))*1000;
+    var cls=actualSafety<1?'error':actualSafety<1.5?'warn':'success';
+    document.getElementById('vacuumResult').innerHTML='<h4>计算结果</h4><div class="result-grid"><div class="result-item"><span class="result-label">单吸盘力:</span><span class="result-value">'+singleForce.toFixed(2)+' N</span></div><div class="result-item"><span class="result-label">总吸附力:</span><span class="result-value">'+totalForce.toFixed(2)+' N</span></div><div class="result-item"><span class="result-label">实际安全比:</span><span class="result-value '+cls+'">'+actualSafety.toFixed(2)+'</span></div><div class="result-item"><span class="result-label">推荐直径:</span><span class="result-value">'+Math.ceil(recommendedD)+' mm</span></div></div>';
+}
+
+function calculateConveyor(){
+    var load=parseFloat(document.getElementById('cn-load').value)||0;
+    var speed=parseFloat(document.getElementById('cn-speed').value)||0;
+    var friction=parseFloat(document.getElementById('cn-friction').value)||0;
+    var accel=parseFloat(document.getElementById('cn-accel').value)||0;
+    var angle=parseFloat(document.getElementById('cn-angle').value)||0;
+    var efficiency=parseFloat(document.getElementById('cn-efficiency').value)||0.85;
+    var wheelD=parseFloat(document.getElementById('cn-wheelD').value)||0;
+    var motorRPM=parseFloat(document.getElementById('cn-motorRPM').value)||0;
+    if(!load||!speed||!friction){document.getElementById('conveyorResult').innerHTML='<h4>结果</h4><p style="color:var(--warning)">请输入完整参数</p>';return;}
+    var theta=angle*Math.PI/180;
+    var Fe=load*9.8*(friction*Math.cos(theta)+Math.sin(theta))+load*accel;
+    var power=(Fe*speed)/(1000*efficiency);
+    var ratio=0;
+    if(wheelD&&motorRPM){var circumference=Math.PI*wheelD/1000;var requiredRPM=(speed/circumference)*60;ratio=motorRPM/requiredRPM;}
+    document.getElementById('conveyorResult').innerHTML='<h4>计算结果</h4><div class="result-grid"><div class="result-item"><span class="result-label">有效张力:</span><span class="result-value">'+Fe.toFixed(2)+' N</span></div><div class="result-item"><span class="result-label">所需功率:</span><span class="result-value">'+power.toFixed(3)+' kW</span></div><div class="result-item"><span class="result-label">建议减速比:</span><span class="result-value">'+(ratio?ratio.toFixed(2):'N/A')+'</span></div><div class="result-item"><span class="result-label">张紧力:</span><span class="result-value">'+(Fe*1.1).toFixed(2)+' N</span></div></div>';
+}
+
+function calculateRobot(){
+    var model=document.getElementById('r-robotModel').value;
+    var toolMass=parseFloat(document.getElementById('r-toolMass').value)||0;
+    var workpieceMass=parseFloat(document.getElementById('r-workMass').value)||0;
+    var workpieceInertia=parseFloat(document.getElementById('r-workInertia').value)||0;
+    var robotParams={'UR5':{ratedLoad:5,ratedInertia:0.3},'UR10':{ratedLoad:10,ratedInertia:0.5},'Fanuc':{ratedLoad:6,ratedInertia:0.4},'ABB':{ratedLoad:3,ratedInertia:0.2},'KUKA':{ratedLoad:6,ratedInertia:0.4}};
+    var params=robotParams[model]||{ratedLoad:5,ratedInertia:0.3};
+    var totalMass=toolMass+workpieceMass;
+    var totalInertia=workpieceInertia;
+    var inertiaRatio=params.ratedInertia>0?totalInertia/params.ratedInertia:0;
+    var conclusion='✅ 合格';
+    var conclusionClass='success';
+    if(totalMass>params.ratedLoad){conclusion='⚠️ 负载超限';conclusionClass='error';}
+    else if(inertiaRatio>1){conclusion='⚠️ 惯量超限';conclusionClass='warn';}
+    document.getElementById('robotResult').innerHTML='<h4>计算结果</h4><div class="result-grid"><div class="result-item"><span class="result-label">总质量:</span><span class="result-value '+(totalMass>params.ratedLoad?'error':'')+'">'+totalMass.toFixed(1)+' / '+params.ratedLoad+' kg</span></div><div class="result-item"><span class="result-label">综合惯量:</span><span class="result-value">'+totalInertia.toFixed(2)+' kg·cm²</span></div><div class="result-item"><span class="result-label">惯量比:</span><span class="result-value '+(inertiaRatio>1?'warn':'')+'">'+inertiaRatio.toFixed(2)+'</span></div><div class="result-item"><span class="result-label">校核结论:</span><span class="result-value '+conclusionClass+'">'+conclusion+'</span></div></div>';
+}
+
+function calculateCost(){
+    var type=document.getElementById('co-type').value;
+    var material=document.getElementById('co-material').value;
+    var length=parseFloat(document.getElementById('co-length').value)||0;
+    var width=parseFloat(document.getElementById('co-width').value)||0;
+    var thickness=parseFloat(document.getElementById('co-thickness').value)||0;
+    var weight=parseFloat(document.getElementById('co-weight').value)||0;
+    var cutLength=parseFloat(document.getElementById('co-cutLength').value)||0;
+    var holes=parseInt(document.getElementById('co-holes').value)||0;
+    var threads=parseInt(document.getElementById('co-threads').value)||0;
+    var surface=document.getElementById('co-surface').value;
+    var complex=parseFloat(document.getElementById('co-complex').value)||1;
+    var matParams={aluminum:{density:2.7,price:25},steel:{density:7.85,price:8},stainless:{density:7.93,price:18},copper:{density:8.9,price:45}};
+    var mp=matParams[material]||matParams.steel;
+    var w=weight;
+    if(!w&&length&&width&&thickness)w=length*width*thickness*mp.density/1000000;
+    var matCost=w*mp.price;
+    var procCost=0;
+    if(type==='sheet')procCost=(cutLength*0.1+holes*0.5+threads*1)*complex;
+    else procCost=(cutLength*0.2+holes*1+threads*2)*complex;
+    var surfCost=0;
+    if(surface==='anodizing')surfCost=length*width/10000*20;
+    else if(surface==='painting')surfCost=length*width/10000*15;
+    else if(surface==='plating')surfCost=length*width/10000*25;
+    var total=matCost+procCost+surfCost;
+    document.getElementById('costResult').innerHTML='<h4>估价结果</h4><div class="result-grid"><div class="result-item"><span class="result-label">材料费:</span><span class="result-value">¥'+matCost.toFixed(2)+'</span></div><div class="result-item"><span class="result-label">加工费:</span><span class="result-value">¥'+procCost.toFixed(2)+'</span></div><div class="result-item"><span class="result-label">表面处理:</span><span class="result-value">¥'+surfCost.toFixed(2)+'</span></div><div class="result-item"><span class="result-label" style="font-weight:bold">预估总价:</span><span class="result-value success" style="font-size:1.1rem">¥'+total.toFixed(2)+'</span></div></div>';
+}
+
+function loadMotorDatabase(){var motors=JSON.parse(localStorage.getItem(STORAGE_KEYS.MOTORS)||'[]');document.getElementById('motorDatabase').innerHTML=motors.map(function(m,i){return'<div class="db-item"><span>'+m.model+' ('+m.inertia+' kg·cm², '+m.torque+' N·m)</span><button class="del-btn" onclick="deleteMotor('+i+')">×</button></div>';}).join('');}
+function addMotor(){var model=document.getElementById('m-add-model').value;var inertia=parseFloat(document.getElementById('m-add-inertia').value)||0;var torque=parseFloat(document.getElementById('m-add-torque').value)||0;if(!model)return;var motors=JSON.parse(localStorage.getItem(STORAGE_KEYS.MOTORS)||'[]');motors.push({model:model,inertia:inertia,torque:torque});localStorage.setItem(STORAGE_KEYS.MOTORS,JSON.stringify(motors));loadMotorDatabase();loadMotorSelects();document.getElementById('motor-add').classList.remove('show');clearInputs(['m-add-model','m-add-inertia','m-add-torque']);}
+function deleteMotor(index){var motors=JSON.parse(localStorage.getItem(STORAGE_KEYS.MOTORS)||'[]');motors.splice(index,1);localStorage.setItem(STORAGE_KEYS.MOTORS,JSON.stringify(motors));loadMotorDatabase();loadMotorSelects();}
+function loadMotorSelects(){var motors=JSON.parse(localStorage.getItem(STORAGE_KEYS.MOTORS)||'[]');['u-motor1','u-motor2','u-motor3'].forEach(function(id){var sel=document.getElementById(id);if(sel)sel.innerHTML=motors.map(function(m){return'<option value="'+m.model+'">'+m.model+'</option>';}).join('');});}
+
+function loadCameraDatabase(){var cameras=JSON.parse(localStorage.getItem(STORAGE_KEYS.CAMERAS)||'[]');document.getElementById('cameraDatabase').innerHTML=cameras.map(function(c,i){return'<div class="db-item"><span>'+c.model+' ('+c.width+'x'+c.height+', '+c.pixelSize+'μm)</span><button class="del-btn" onclick="deleteCamera('+i+')">×</button></div>';}).join('');}
+function addCamera(){var model=document.getElementById('c-add-model').value;var width=parseInt(document.getElementById('c-add-width').value)||0;var height=parseInt(document.getElementById('c-add-height').value)||0;var pixelSize=parseFloat(document.getElementById('c-add-pixel').value)||0;if(!model)return;var cameras=JSON.parse(localStorage.getItem(STORAGE_KEYS.CAMERAS)||'[]');cameras.push({model:model,width:width,height:height,pixelSize:pixelSize});localStorage.setItem(STORAGE_KEYS.CAMERAS,JSON.stringify(cameras));loadCameraDatabase();document.getElementById('camera-add').classList.remove('show');clearInputs(['c-add-model','c-add-width','c-add-height','c-add-pixel']);}
+function deleteCamera(index){var cameras=JSON.parse(localStorage.getItem(STORAGE_KEYS.CAMERAS)||'[]');cameras.splice(index,1);localStorage.setItem(STORAGE_KEYS.CAMERAS,JSON.stringify(cameras));loadCameraDatabase();}
+
+function loadCylinderDatabase(){var cylinders=JSON.parse(localStorage.getItem(STORAGE_KEYS.CYLINDERS)||'[]');document.getElementById('cylinderDatabase').innerHTML=cylinders.map(function(c,i){return'<div class="db-item"><span>'+c.model+' (缸径:'+c.diameter+'mm)</span><button class="del-btn" onclick="deleteCylinder('+i+')">×</button></div>';}).join('');}
+function addCylinder(){var model=document.getElementById('p-add-model').value;var diameter=parseFloat(document.getElementById('p-add-diameter').value)||0;if(!model)return;var cylinders=JSON.parse(localStorage.getItem(STORAGE_KEYS.CYLINDERS)||'[]');cylinders.push({model:model,diameter:diameter});localStorage.setItem(STORAGE_KEYS.CYLINDERS,JSON.stringify(cylinders));loadCylinderDatabase();document.getElementById('cylinder-add').classList.remove('show');clearInputs(['p-add-model','p-add-diameter']);}
+function deleteCylinder(index){var cylinders=JSON.parse(localStorage.getItem(STORAGE_KEYS.CYLINDERS)||'[]');cylinders.splice(index,1);localStorage.setItem(STORAGE_KEYS.CYLINDERS,JSON.stringify(cylinders));loadCylinderDatabase();}
+
+function loadVacuumDatabase(){var vacuums=JSON.parse(localStorage.getItem(STORAGE_KEYS.VACUUMS)||'[]');document.getElementById('vacuumDatabase').innerHTML=vacuums.map(function(v,i){return'<div class="db-item"><span>'+v.model+' ('+v.diameter+'mm, '+v.material+')</span><button class="del-btn" onclick="deleteVacuum('+i+')">×</button></div>';}).join('');}
+function addVacuum(){var model=document.getElementById('v-add-model').value;var diameter=parseFloat(document.getElementById('v-add-diameter').value)||0;var material=document.getElementById('v-add-material').value||'橡胶';if(!model)return;var vacuums=JSON.parse(localStorage.getItem(STORAGE_KEYS.VACUUMS)||'[]');vacuums.push({model:model,diameter:diameter,material:material});localStorage.setItem(STORAGE_KEYS.VACUUMS,JSON.stringify(vacuums));loadVacuumDatabase();document.getElementById('vacuum-add').classList.remove('show');clearInputs(['v-add-model','v-add-diameter','v-add-material']);}
+function deleteVacuum(index){var vacuums=JSON.parse(localStorage.getItem(STORAGE_KEYS.VACUUMS)||'[]');vacuums.splice(index,1);localStorage.setItem(STORAGE_KEYS.VACUUMS,JSON.stringify(vacuums));loadVacuumDatabase();}
+
+function loadWheelDatabase(){var wheels=JSON.parse(localStorage.getItem(STORAGE_KEYS.WHEELS)||'[]');document.getElementById('wheelDatabase').innerHTML=wheels.map(function(w,i){return'<div class="db-item"><span>'+w.model+' (直径:'+w.diameter+'mm)</span><button class="del-btn" onclick="deleteWheel('+i+')">×</button></div>';}).join('');}
+function addWheel(){var model=document.getElementById('cn-add-model').value;var diameter=parseFloat(document.getElementById('cn-add-diameter').value)||0;if(!model)return;var wheels=JSON.parse(localStorage.getItem(STORAGE_KEYS.WHEELS)||'[]');wheels.push({model:model,diameter:diameter});localStorage.setItem(STORAGE_KEYS.WHEELS,JSON.stringify(wheels));loadWheelDatabase();document.getElementById('wheel-add').classList.remove('show');clearInputs(['cn-add-model','cn-add-diameter']);}
+function deleteWheel(index){var wheels=JSON.parse(localStorage.getItem(STORAGE_KEYS.WHEELS)||'[]');wheels.splice(index,1);localStorage.setItem(STORAGE_KEYS.WHEELS,JSON.stringify(wheels));loadWheelDatabase();}
+
+function loadRobotDatabase(){var robots=JSON.parse(localStorage.getItem(STORAGE_KEYS.ROBOTS)||'[]');document.getElementById('robotDatabase').innerHTML=robots.map(function(r,i){return'<div class="db-item"><span>'+r.model+' (负载:'+r.ratedLoad+'kg)</span><button class="del-btn" onclick="deleteRobot('+i+')">×</button></div>';}).join('');}
+function addRobot(){var model=document.getElementById('r-add-model').value;var ratedLoad=parseFloat(document.getElementById('r-add-load').value)||0;var ratedInertia=parseFloat(document.getElementById('r-add-inertia').value)||0;if(!model)return;var robots=JSON.parse(localStorage.getItem(STORAGE_KEYS.ROBOTS)||'[]');robots.push({model:model,ratedLoad:ratedLoad,ratedInertia:ratedInertia});localStorage.setItem(STORAGE_KEYS.ROBOTS,JSON.stringify(robots));loadRobotDatabase();document.getElementById('robot-add').classList.remove('show');clearInputs(['r-add-model','r-add-load','r-add-inertia']);}
+function deleteRobot(index){var robots=JSON.parse(localStorage.getItem(STORAGE_KEYS.ROBOTS)||'[]');robots.splice(index,1);localStorage.setItem(STORAGE_KEYS.ROBOTS,JSON.stringify(robots));loadRobotDatabase();}
+
+function loadMaterialDatabase(){var materials=JSON.parse(localStorage.getItem(STORAGE_KEYS.MATERIALS)||'[]');document.getElementById('materialDatabase').innerHTML=materials.map(function(m,i){return'<div class="db-item"><span>'+m.name+' (密度:'+m.density+', 单价:'+m.price+'元/kg)</span><button class="del-btn" onclick="deleteMaterial('+i+')">×</button></div>';}).join('');}
+function addMaterial(){var name=document.getElementById('co-add-name').value;var density=parseFloat(document.getElementById('co-add-density').value)||0;var price=parseFloat(document.getElementById('co-add-price').value)||0;if(!name)return;var materials=JSON.parse(localStorage.getItem(STORAGE_KEYS.MATERIALS)||'[]');materials.push({name:name,density:density,price:price});localStorage.setItem(STORAGE_KEYS.MATERIALS,JSON.stringify(materials));loadMaterialDatabase();document.getElementById('material-add').classList.remove('show');clearInputs(['co-add-name','co-add-density','co-add-price']);}
+function deleteMaterial(index){var materials=JSON.parse(localStorage.getItem(STORAGE_KEYS.MATERIALS)||'[]');materials.splice(index,1);localStorage.setItem(STORAGE_KEYS.MATERIALS,JSON.stringify(materials));loadMaterialDatabase();}
+
+function calculateTolerance(){
+    var basicSize=parseFloat(document.getElementById('t-basicSize').value)||0;
+    var toleranceGrade=document.getElementById('t-toleranceGrade').value;
+    var fitType=document.getElementById('t-fitType').value;
+    if(!basicSize){document.getElementById('toleranceResult').innerHTML='<h4>结果</h4><p style="color:var(--warning)">请输入基本尺寸</p>';return;}
+    
+    var tolerance=calculateIT(basicSize,toleranceGrade);
+    var fitData=getFitData(fitType,basicSize);
+    var html='<h4>公差查询结果</h4><div class="result-grid">';
+    html+='<div class="result-item"><span class="result-label">基本尺寸:</span><span class="result-value">'+basicSize+' mm</span></div>';
+    html+='<div class="result-item"><span class="result-label">公差等级:</span><span class="result-value">'+toleranceGrade+'</span></div>';
+    html+='<div class="result-item"><span class="result-label">公差值:</span><span class="result-value">'+tolerance+' μm</span></div>';
+    html+='<div class="result-item"><span class="result-label">配合类型:</span><span class="result-value">'+fitType+'</span></div>';
+    html+='<div class="result-item"><span class="result-label">孔公差:</span><span class="result-value">H'+toleranceGrade.replace('IT','')+'</span></div>';
+    html+='<div class="result-item"><span class="result-label">轴公差:</span><span class="result-value">'+fitData.axis+'</span></div>';
+    html+='</div>';
+    document.getElementById('toleranceResult').innerHTML=html;
+}
+
+function calculateIT(size,grade){
+    var itNumber=parseInt(grade.replace('IT',''));
+    var itValues=[0.3,0.5,0.8,1.2,2,3,4,6,10,14,20,28,40,56,80,110,160,220,320];
+    if(itNumber>=0&&itNumber<=18)return itValues[itNumber];
+    return 0;
+}
+
+function getFitData(fitType,size){
+    var fits={'clearance':{hole:'H',axis:'f'},'transition':{hole:'H',axis:'k'},'interference':{hole:'H',axis:'p'}};
+    return fits[fitType]||{hole:'H',axis:'f'};
+}
+
+function loadToleranceDatabase(){var tolerances=JSON.parse(localStorage.getItem(STORAGE_KEYS.TOLERANCES)||'[]');document.getElementById('toleranceDatabase').innerHTML=tolerances.map(function(t,i){return'<div class="db-item"><span>'+t.name+' ('+t.size+'mm, '+t.grade+', '+t.fit+')</span><button class="del-btn" onclick="deleteTolerance('+i+')">×</button></div>';}).join('');}
+function addTolerance(){var name=document.getElementById('t-add-name').value;var size=parseFloat(document.getElementById('t-add-size').value)||0;var grade=document.getElementById('t-add-grade').value;var fit=document.getElementById('t-add-fit').value;if(!name)return;var tolerances=JSON.parse(localStorage.getItem(STORAGE_KEYS.TOLERANCES)||'[]');tolerances.push({name:name,size:size,grade:grade,fit:fit});localStorage.setItem(STORAGE_KEYS.TOLERANCES,JSON.stringify(tolerances));loadToleranceDatabase();document.getElementById('tolerance-add').classList.remove('show');clearInputs(['t-add-name','t-add-size','t-add-grade','t-add-fit']);}
+function deleteTolerance(index){var tolerances=JSON.parse(localStorage.getItem(STORAGE_KEYS.TOLERANCES)||'[]');tolerances.splice(index,1);localStorage.setItem(STORAGE_KEYS.TOLERANCES,JSON.stringify(tolerances));loadToleranceDatabase();}
+
+window.onload=function(){initData();loadAllDatabases();};
+</script>
+</body>
+</html>
