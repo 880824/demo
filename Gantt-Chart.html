@@ -689,11 +689,16 @@ const GanttChart = {
           
           const htmlContent = this.buildHTML(dataToSave);
           
+          // 获取当前的文件名，并通过 decodeURIComponent 解析编码格式的中文
+          const pathSegments = window.location.pathname.split('/');
+          const rawFileName = pathSegments.pop();
+          const currentFileName = rawFileName ? decodeURIComponent(rawFileName) : '设备动作节拍表.html';
+          
           if (window.showSaveFilePicker) {
             try {
               if (!this.fileHandle) {
                 this.fileHandle = await window.showSaveFilePicker({
-                  suggestedName: 'index-light.html',
+                  suggestedName: currentFileName,
                   types: [{ description: 'HTML 文件', accept: { 'text/html': ['.html'] } }]
                 });
               }
@@ -708,15 +713,15 @@ const GanttChart = {
             }
           }
           
-          this.downloadHTML(htmlContent);
+          this.downloadHTML(htmlContent, currentFileName);
         },
         
-        downloadHTML(htmlContent) {
+        downloadHTML(htmlContent, fileName = '设备动作节拍表.html') {
           const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `index-light.html`;
+          a.download = fileName;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
